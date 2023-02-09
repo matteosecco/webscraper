@@ -1,15 +1,17 @@
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 
-
 # the driver created is one and global for all scrapers
-options = Options()
-options.add_argument('--headless')
-options.add_experimental_option('excludeSwitches', ['enable-logging'])
-DRIVER = webdriver.Chrome(options=options)
+try:
+    options = Options()
+    options.add_argument('--headless')
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    DRIVER = webdriver.Chrome(options=options)
+except Exception as e:
+    print("The bot was not able to create a webdriver instance. Probably the driver has to be updated")
+    input()
 
-
-def get_immobiliare(comune, min, max, *args):
+def get_immobiliare(comune: str, min: int, max: int, *args) -> list:
     """ Function to get properties from Immobiliare.it """
 
     # creates the URL for the search
@@ -21,8 +23,9 @@ def get_immobiliare(comune, min, max, *args):
     for a in args:
         url += a
 
+
     DRIVER.get(url)
-    first_page = DRIVER.find_elements_by_class_name("in-realEstateResults__item")
+    first_page = DRIVER.find_element_by_class_name("in-realEstateResults").find_elements_by_class_name("in-realEstateResults__item")
 
     el_list = []
 
@@ -39,7 +42,7 @@ def get_immobiliare(comune, min, max, *args):
     return el_list
 
 
-def get_subito(oggetto, regione, provincia, categoria, *args):
+def get_subito(oggetto: str, regione: str, provincia: str, categoria: str, *args) -> list:
     """ Function to get items from Subito.it
         regione='italia'
         categoria='usato' """
