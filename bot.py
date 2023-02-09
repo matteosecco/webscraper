@@ -3,21 +3,22 @@ import csv
 
 
 class myBot:
-    def __init__(self, scraper, var, d, maildata=""):
-        """ A myBot object is an object that has internal data, and is able to update
-            that data and send the differences by email.
-            Each instance can be customized by specifyng a data retriving function with its variables
+    def __init__(self, scraper, varlist: list, d: str, maildata: str =""):
+        """ A myBot is an object that has an internal data, and is able to update
+            that data using the update coming from the function 'scraper'.
+            Each instance can be customized by specifyng a data retriving function with its variables.
+            The bot goes on internet when the instance is created only if the data is not present
+            otherwise it waits for an update call.
             
-            scraper (function): function that get a list of elements from the internet (for ex a list of properties)
+            scraper: function that get a list of elements from the internet (for ex a list of properties)
                 must return a LIST OF LIST
-            var (list): parameters of the 'scraper' function
-            d (string): directory to save data externally
-            maildata (list): [user, psw, tolist] to send the mail, not sent if left on default """
-        print("Creation of the bot")
-
+            varlist: parameters of the 'scraper' function
+            d: directory to save data externally
+            maildata: [user, psw, tolist] to send the mail, not sent if left on default """
+        
         # creates object variables
         self.scraper = scraper
-        self.vars = var
+        self.vars = varlist
         self.dir = d
         self.mail = maildata
 
@@ -25,28 +26,27 @@ class myBot:
         try:
             with open(d, "r") as f:
                 self.saved = list(csv.reader(f))
-        # if the data is not saved
+        # if the data is not saved, a new file is created
         except FileNotFoundError:
-            self.saved = self.get()
-            self.datawrite(self.saved)
-
-    def get(self):
+            self.saved = self._get()
+            self._datawrite(self.saved)
+        
+    def _get(self) -> None:
         """ Downloads the list of elements required through the fuction passed """
 
         return self.scraper(*self.vars)
 
-    def datawrite(self, data):
+    def _datawrite(self, data: str) -> None:
         """ Writes a .csv file with the data requested """
 
         with open(self.dir, "w", newline='') as f:
             csv.writer(f).writerows(data)
 
-    def update(self):
+    def update(self) -> bool:
         """ Updates the data saved by downloading new data """
-        print("Bot update")
-
-        # new data
-        newlist = self.get()
+        
+        # gathers the new data using the provided function
+        newlist = self._get()
 
         # difference with the data saved
         diff = [x for x in newlist if x not in self.saved]
@@ -54,7 +54,7 @@ class myBot:
         if diff != []:
             # updates internal and external data
             self.saved = diff+self.saved
-            self.datawrite(self.saved)
+            self._datawrite(self.saved)
 
             if self.mail != "":
                 # creates the body
@@ -71,7 +71,6 @@ class myBot:
                 server.login(self.mail[0], self.mail[1])
                 server.sendmail(self.mail[0], self.mail[2], body.encode("utf-8"))
                 server.close()
-                print("New elements found, email sent")
+                return True
         else:
-            print("No new elements found")
-
+            return False
